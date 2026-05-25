@@ -19,7 +19,7 @@ Result may include:
 - `ANSWER:` — a direct factual answer
 - `SUMMARY:` — an overview with source and link
 - `DEFINITION:` — a dictionary-style definition
-- `RELATED:` — related facts and topics
-- `NEWS:` — recent news headlines with dates and links
+- `NEWS:` — recent headlines with dates
+- `ARTICLE:` — extracted content from the top news article
 
-Base your reply only on what the result contains. Stop after one search.
+Base your reply on what the result contains. Stop after one search.
