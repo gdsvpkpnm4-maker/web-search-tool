@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+<script>
+window.ai_edge_gallery_get_result = async function(data) {
+  try {
+    let query;
+    try {
+      const params = JSON.parse(data);
+      query = params.query || data;
+    } catch(e) {
+      query = data;
+    }
+    query = query.trim();
+    if (!query) return JSON.stringify({ error: "No query provided." });
+
+    let result = "";
+
+    // DuckDuckGo instant answers (facts, definitions, summaries)
+    try {
+      const ddgUrl = "https://api.duckduckgo.com/?q="
+        + encodeURIComponent(query)
+        + "&format=json&no_html=1&skip_disambig=1";
+      const ddg = await (await fetch(ddgUrl)).json();
+
+      if (ddg.Answer) result += "ANSWER: " + ddg.Answer + "\n\n";
+      if (ddg.AbstractText) {
+        result += "SUMMARY: " + ddg.AbstractText + "\n";
+        if (ddg.AbstractSource) result += "Source: " + ddg.AbstractSource + "\n";
+        if (ddg.AbstractURL)    result += "URL: "    + ddg.AbstractURL    + "\n";
+        result += "\n";
+      }
+      if (ddg.Definition) {
+        result += "DEFINITION: " + ddg.Definition + "\n";
+        if (ddg.DefinitionSource) result += "Source: " + ddg.DefinitionSource + "\n";
+        result += "\n";
+      }
+      if (ddg.RelatedTopics && ddg.RelatedTopics.length > 0) {
+        result += "RELATED:\n";
+        let count = 0;
+        for (const topic of ddg.RelatedTopics) {
+          if (topic.Text && count < 3) {
+            result += "- " + topic.Text + "\n";
+            count++;
+          }
+        }
+        result += "\n";
+      }
+    } catch(e) {}
+
+    // Google News RSS for current events
+    try {
+      const rssUrl = "https://news.google.com/rss/search?q="
+        + encodeURIComponent(query)
+        + "&hl=en-US&gl=US&ceid=US:en";
+      const proxyUrl = "https://api.rss2json.com/v1/api.json?rss_url="
+        + encodeURIComponent(rssUrl);
+      const news = await (await fetch(proxyUrl)).json();
+
+      if (news.items && news.items.length > 0) {
+        result += "NEWS:\n";
+        for (const item of news.items.slice(0, 5)) {
+          result += "- " + item.title;
+          if (item.pubDate) result += " [" + item.pubDate.slice(0, 10) + "]";
+          result += "\n";
+          if (item.link) result += "  " + item.link + "\n";
+        }
+      }
+    } catch(e) {}
+
+    if (!result.trim()) {
+      return JSON.stringify({ error: "No results found for: " + query });
+    }
+
+    return JSON.stringify({ result: result.trim() });
+
+  } catch(err) {
+    return JSON.stringify({ error: "Search failed: " + err.message });
+  }
+};
+</script>
+</body>
+</html>
